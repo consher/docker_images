@@ -1,0 +1,39 @@
+#PATH TO THE MAIN PULSAR SOFTWARE DIRECTORY
+export ASTROSOFT=/SPANDAK
+
+#OSTYPE
+export OSTYPE=linux
+
+#PSRCAT
+export PSRCAT_RUNDIR=$ASTROSOFT/psrcat_tar
+export PSRCAT_FILE=$ASTROSOFT/psrcat_tar/psrcat.db
+
+#TEMPO
+export TEMPO=$ASTROSOFT/tempo
+
+#TEMPO2
+export TEMPO2=$ASTROSOFT/tempo2/T2runtime
+
+#PGPLOT
+export PGPLOT_DIR=/usr/lib/pgplot5
+export PGPLOT_DEV=/xwindow
+
+#PRESTO
+export PRESTO=$ASTROSOFT/presto
+
+#LD_LIBRARY PATH
+export LD_LIBRARY_PATH=/usr/lib:/usr/lib/x64_64-linux-gnu
+	:$PGPLOT_DIR:$ASTROSOFT/lib:$PRESTO/lib:$PRESTO/lib64
+	:$ASTROSOFT/sigpyproc/build/lib.linux-x86_64-2.7
+	:/SPANDAK/lib
+
+#PATH
+export PATH=$PATH:$ASTROSOFT/bin:$PRESTO/bin:$PGPLOT_DIR
+	:$PRESTO/python:$ASTROSOFT/bin/psrchive:/bin:/sbin
+	:/usr/sbin:/usr/local/sbin:/home/$USER/.local/bin
+	:/usr/local/cuda/bin:$ASTROSOFT/PulsarSearch
+
+export PKG_CONFIG_PATH=$ASTROSOFT/cfitsio-4.2.0
+export LD_RUN_PATH=$ASTROSOFT/lib
+export PYTHONPATH=$PYTHONPATH:$PRESTO/lib/python
+:$ASTROSOFT/lib/python2.7/site-packages

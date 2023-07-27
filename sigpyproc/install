@@ -1,0 +1,43 @@
+#Compiling flags
+CPPFLAGS = -O3 -I/path/to/cpgplot.h
+
+#Linking flags
+LFLAGS = -L/path/to/pgplot/libraries -lcpgplot -lpgplot -L/path/to/X11/libraries -lX11 -fno-backslash -lpng -lstdc++ -lm
+
+# Compiler
+CXX = g++
+
+all: dmReducer filAdder filAppender filEdit plotFil plotEvents receiver RFIclean sift strongSift
+
+dmReducer:
+	${CXX} -o dmReducer dmReducer.cpp
+
+filAdder:
+	${CXX} -o filAdder filAdder.cpp
+
+filAppender:
+	${CXX} -o filAppender filAppender.cpp
+
+filEdit:
+	${CXX} -o filEdit filEdit.cpp
+
+plotFil: plotFil.o
+	gfortran -o plotFil plotFil.o $(LFLAGS)
+
+plotEvents: plotEvents.o
+	gfortran -o plotEvents plotEvents.o $(LFLAGS)
+
+receiver:
+	${CXX} -o receiver receiver.cpp
+
+RFIclean:
+	${CXX} -o RFIclean RFIclean.cpp
+
+sift:
+	${CXX} -o sift sift.cpp
+
+strongSift:
+	${CXX} -o strongSift strongSift.cpp
+
+clean:
+	rm -f *.o

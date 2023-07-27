@@ -1,0 +1,248 @@
+#SPANDAK Dockerfile V1.1
+#Conor Sheridan - 05/07/23
+
+#this file copies the method outlined in the following manual
+#https://raw.githubusercontent.com/gajjarv/PulsarSearch/master/images/Pulsar_and_FRB_softwares_installation_manual.pdf
+
+FROM dokken/ubuntu-16.04
+
+COPY /bash_mod /root
+RUN cd /root/ && \
+    cat bash_mod>>.bashrc
+
+
+#installing basic dependencies with apt manager
+RUN apt-get install -y \
+    ftp \
+    wget \
+    csh \
+    cvs \
+    emacs \
+    build-essential \
+    git \
+    m4 \
+    gsl-bin \
+    libgsl0-dev \
+    gfortran \
+    fort77 \
+    python-dev \
+    python-numpy \
+    python-scipy \
+    python-matplotlib \
+    python-sympy \
+    python-nose \
+    ipython \
+    autoconf \
+    automake \
+    libtool \
+    flex \
+    bison \
+    swig \
+    cmake \
+    libpng-dev \
+    libglib2.0-dev \
+    libgd-dev \
+    libltdl-dev \
+    libltdl7 \
+    libblas3 \
+    liblapack3 \
+    libblas-dev \
+    liblapack-dev \
+    libxext-dev \
+    gnuplot \
+    gnuplot-x11 \
+    libx11-dev \
+    xterm \
+    xpdf \
+    imagemagick \
+    htop \
+    screen \
+    gpicview \
+    libopenmpi-dev \
+    openmpi-bin \
+    mpich \
+    libmpich-dev \
+    libhdf5-openmpi-dev \
+    libhdf5-mpich-dev \
+    default-jre \
+    default-jdk \
+    libfftw3-bin \
+    libfftw3-dev \
+    libcfitsio-bin tcsh \
+    python-pip \
+    librdmacm-dev \
+    libboost-all-dev
+
+#make the directory where all the dependencies will be located
+RUN mkdir SPANDAK
+WORKDIR /SPANDAK
+
+#installing FFTW
+RUN ftp://ftp.fftw.org/pub/fftw/fftw-3.3.10.tar.gz && \
+    tar -xvf fftw-3.3.10.tar.gz
+WORKDIR /SPANDAK/fftw-3.3.10
+RUN ./configure --prefix=$ASTROSOFT --enable-float --enable-threads --enable-shared CFLAGS=-fPIC FFLAGS=-fPIC && make \
+    check \
+    install \
+    clean
+
+#returns to SPANDAK directory every time
+WORKDIR /SPANDAK
+
+#installing CFITSIO
+RUN wget http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio-4.2.0.tar.gz && \
+    tar -xvf cfitsio-4.2.0.tar.gz
+WORKDIR /SPANDAK/cfitsio-4.2.0
+RUN ./configure --prefix=$ASTROSOFT CFLAGS=-fPIC FFLAGS=-fPIC && make \
+    shared \
+    install \
+    clean
+
+WORKDIR /SPANDAK
+
+#installing PSRCAT
+RUN wget http://www.atnf.csiro.au/people/pulsar/psrcat/downloads/psrcat_pkg.tar.gz && \
+    tar -xvf psrcat_pkg.tar.gz
+WORKDIR /SPANDAK/psrcat_tar
+RUN source makeit && \
+    cp ./psrcat ~/bin
+
+WORKDIR /SPANDAK
+
+#installing PGPLOT
+RUN sudo apt install pgplot5
+
+#installing TEMPO
+RUN git clone https://github.com/nanograv/tempo.git
+WORKDIR /SPANDAK/tempo
+RUN ./prepare && \
+    ./configure F77=gfortran --prefix=$ASTROSOFT CFLAGS=-fPIC FFLAGS=-fPIC && \
+    make && \
+    make install
+
+WORKDIR /SPANDAK
+
+#installing PRESTO (2.2)
+RUN https://github.com/scottransom/presto/archive/refs/tags/v2.2.tar.gz && \
+    tar -xvf v2.2.tar.gz && \
+    mv presto-2.2 presto
+WORKDIR /SPANDAK/$PRESTO/src
+RUN make makewisdom && \
+    make prep && \
+    make && \
+    make clean
+WORKDIR /SPANDAK/$PRESTO/python
+RUN make
+
+WORKDIR /SPANDAK
+
+#installing TEMPO2
+RUN git clone https://bitbucket.org/psrsoft/tempo2.git
+WORKDIR /SPANDAK/tempo2
+RUN ./bootstrap && \
+    ./configure F77=gfortran --prefix=$ASTROSOFT --with-cfitsio-dir=$ASTROSOFT --with-fftw3-dir=$ASTROSOFT CFLAGS=-fPIC FFLAGS=-fPIC CXXFLAGS="-I$ASTROSOFT/include -I$PGPLOT_DIR" LDFLAGS=-L$PGPLOT_DIR && \
+    make && \
+    make \
+    install \
+    plugins \
+    pluginsinstall \
+    unsupported \
+    unsupported-install \
+    clean
+
+WORKDIR /SPANDAK
+
+#installing PSRCHIVE
+RUN git clone git://git.code.sf.net/p/psrchive/code psrchive
+WORKDIR /SPANDAK/psrchive
+RUN ./bootstrap && \
+    /configure F77=gfortran --prefix=$ASTROSOFT --with-cfitsio-dir=$ASTROSOFT --with-fftw3-dir=$ASTROSOFT --enable-shared CFLAGS=-fPIC FFLAGS=-fPIC && \
+    make && \
+    make install && \
+    make clean
+
+WORKDIR /SPANDAK
+
+#installing DSPSR
+RUN git clone git://git.code.sf.net/p/dspsr/code dspsr
+WORKDIR /SPANDAK/dspsr
+RUN ./bootstrap && \
+    ./configure --prefix=$ASTROSOFT --with-cfitsio-dir=$ASTROSOFT F77=gfortran CFLAGS=-fPIC FFLAGS=-fPIC LDFLAGS=-L$PGPLOT_DIR && \
+    make && \
+    make install && \
+    make clean
+
+WORKDIR /SPANDAK
+
+#installing CUDA
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-ubuntu1804.pin && \
+    mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
+    wget https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda-repo-ubuntu1804-12-1-local_12.1.0-530.30.02-1_amd64.deb && \
+    dpkg -i cuda-repo-ubuntu1804-12-1-local_12.1.0-530.30.02-1_amd64.deb && \
+    cp /var/cuda-repo-ubuntu1804-12-1-local/cuda-*-keyring.gpg /usr/share/keyrings/ && \
+    apt-get update && \
+    apt-get -y install cuda
+
+#installing Dedisp
+RUN git clone https://github.com/ajameson/dedisp.git
+WORKDIR /SPANDAK/dedisp
+RUN make && \
+    make install
+
+WORKDIR /SPANDAK
+
+#installing PSRDADA
+RUN git clone git://git.code.sf.net/p/psrdada/code psrdada
+WORKDIR /SPANDAK/psrdada
+RUN .bootstrap && \
+    ./configure --prefix=$ASTROSOFT && \
+    make && \
+    make install
+
+WORKDIR /SPANDAK
+
+#installing Heimdall
+RUN git clone git://git.code.sf.net/p/heimdall-astro/code heimdall && \
+    ./bootstrap && \
+    ./configure --prefix=$ASTROSOFT --with-psrdada-dir=$ASTROSOFT --with-dedisp-dir=$ASTROSOFT --with-cuda-dir=/usr/local/cuda && \
+    make && \
+    make check && \
+    make install && \
+    make installcheck
+WORKDIR /SPANDAK/heimdall/Scripts
+RUN make install
+
+WORKDIR /SPANDAK
+
+#installing SIGPROC
+RUN git clone https://github.com/SixByNine/sigproc.git
+WORKDIR /SPANDAK/sigproc
+RUN .bootstrap && \
+    ./configure --prefix=$ASTROSOFT --with-cfitsio-dir=$ASTROSOFT --with-fftw-dir=$ASTROSOFT F77=gfortran CFLAGS=-fPIC FFLAGS=-fPIC CPPFLAGS=-I$ASTROSOFT/include LDFLAGS="-L$ASTROSOFT/lib -L$PGPLOT_DIR -L/usr/lib/x86_64-linux-gnu" LIBS="-lX11 -ltempo2pred -lpng" && \
+    make && \
+    make install
+
+WORKDIR /SPANDAK
+
+#installing Sigpyproc
+RUN git clone https://github.com/ewanbarr/sigpyproc.git
+WORKDIR /SPANDAK/sigpyproc
+RUN pip install
+
+WORKDIR /SPANDAK
+
+#installing gunplot-py
+RUN wget https://altushost-swe.dl.sourceforge.net/project/gnuplot-py/Gnuplot-py/1.8/gnuplot-py-1.8.tar.gz && \
+    tar -xvf gnuplot-py-1.8.tar.gz
+WORKDIR /SPANDAK/gnuplot-py-1.8
+RUN pip install
+
+WORKDIR /SPANDAK
+
+#installing Pandas
+RUN pip install pandas
+
+#FINALLY installing SPANDAK 
+RUN git clone https://github.com/gajjarv/PulsarSearch.git
+
+CMD /bin/sh
